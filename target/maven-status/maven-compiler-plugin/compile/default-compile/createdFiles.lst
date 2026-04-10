@@ -1,0 +1,12 @@
+com\nageoffer\ai\tender\service\VectorRetrievalService.class
+com\nageoffer\ai\tender\service\DocumentGenerationService.class
+com\nageoffer\ai\tender\service\ContentSelectionService.class
+com\nageoffer\ai\tender\controller\AIController.class
+com\nageoffer\ai\tender\config\AIProperties.class
+META-INF\spring-configuration-metadata.json
+com\nageoffer\ai\tender\config\AIProperties$VectorStore.class
+com\nageoffer\ai\tender\TenderAiApplication.class
+com\nageoffer\ai\tender\service\TenderDocumentService.class
+com\nageoffer\ai\tender\config\AIProperties$OpenAI.class
+com\nageoffer\ai\tender\service\LLMService.class
+com\nageoffer\ai\tender\config\response\Response.class
