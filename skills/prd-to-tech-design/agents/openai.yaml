@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD To Tech Design"
+  short_description: "Turn PRDs into global and feature-level technical design."
+  default_prompt: "Use $prd-to-tech-design to turn this PRD into a global architecture or feature technical design."
