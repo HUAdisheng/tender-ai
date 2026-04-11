@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD Generation"
+  short_description: "Clarify product needs and draft structured PRDs."
+  default_prompt: "Use $prd-generation to turn my feature request into a structured PRD."
