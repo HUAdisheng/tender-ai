@@ -1,0 +1,8 @@
+### 用户登录
+POST http://127.0.0.1:8000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "acme_admin",
+  "password": "StrongPassword@123"
+}

@@ -17,6 +17,7 @@
 ## 推荐技术方向
 
 - 后端：`FastAPI`
+- 包管理：`uv`
 - AI 编排：`LangChain`
 - 数据库：`PostgreSQL`
 - 向量检索：`pgvector`
@@ -51,6 +52,87 @@ tests/
 ├── unit/
 ├── integration/
 └── e2e/
+```
+
+## 启动方式
+
+当前项目已经具备最小可运行后端骨架，可以按下面步骤启动。
+
+推荐直接使用启动脚本：
+
+```bash
+bash scripts/dev.sh
+```
+
+脚本会自动完成：
+
+- 检查 `uv`
+- 创建 `.venv`
+- 安装依赖
+- 生成 `.env`
+- 启动 `uvicorn`
+
+如果你希望手动执行，也可以按下面步骤启动。
+
+1. 安装 `uv`
+
+如果本机还没有 `uv`，可以先执行：
+
+```bash
+pip install uv
+```
+
+2. 创建并激活虚拟环境
+
+```bash
+uv venv
+source .venv/bin/activate
+```
+
+3. 安装依赖
+
+```bash
+uv pip install -e . --no-build-isolation
+```
+
+4. 准备环境变量
+
+```bash
+cp .env.example .env
+```
+
+当前基础框架启动时不强依赖数据库、Redis 或其他外部服务；如果暂时不配置这些变量，也可以先启动服务。
+
+5. 启动 FastAPI
+
+```bash
+uvicorn app.main:app --reload
+```
+
+默认启动地址：
+
+- `http://127.0.0.1:8000`
+
+6. 验证服务是否正常
+
+打开：
+
+- `http://127.0.0.1:8000/v1/health`
+
+预期返回：
+
+```json
+{
+  "status": "ok",
+  "app": "Tender AI",
+  "env": "local"
+}
+```
+
+如果后续补了锁文件，也可以直接使用：
+
+```bash
+uv sync
 ```
 
 ## 架构原则
