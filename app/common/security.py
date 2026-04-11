@@ -69,3 +69,63 @@ def create_access_token(user_id: str, username: str) -> tuple[str, int]:
     ).digest()
     token = f"{payload_encoded}.{_b64encode(signature)}"
     return token, expires_in
+
+
+def decode_access_token(token: str) -> dict:
+    """解析并校验访问令牌，返回载荷字典。
+
+    这是一个最小实现，跟 create_access_token 对称。若校验失败则抛出 ValueError。
+    """
+    try:
+        payload_encoded, signature_encoded = token.split(".", maxsplit=1)
+    except ValueError:
+        raise ValueError("invalid token format")
+
+    # 校验签名
+    expected_sig = hmac.new(
+        settings.auth_secret_key.encode("utf-8"),
+        payload_encoded.encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+    if not hmac.compare_digest(_b64encode(expected_sig), signature_encoded):
+        raise ValueError("invalid token signature")
+
+    # 解码载荷
+    # 补齐 base64 padding
+    pad = "=" * (-len(payload_encoded) % 4)
+    try:
+        payload_bytes = base64.urlsafe_b64decode(payload_encoded + pad)
+        payload = json.loads(payload_bytes.decode("utf-8"))
+    except Exception as exc:  # noqa: BLE001 - 抛给上层处理
+        raise ValueError("invalid token payload") from exc
+
+    # 校验过期
+    now_ts = int(datetime.now(UTC).timestamp())
+    exp = int(payload.get("exp", 0))
+    if exp and now_ts > exp:
+        raise ValueError("token expired")
+
+    return payload
+
+
+from fastapi import Header, HTTPException, status
+
+
+async def get_current_user(authorization: str | None = Header(None, alias="Authorization")) -> dict:
+    """FastAPI 依赖：从 Authorization header 中解析 token 并返回 payload。
+
+    返回值为 token 的 payload（包含 sub, username, exp 等字段）。若 token 无效或缺失，将抛出 HTTPException。
+    """
+    if not authorization:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing Authorization header")
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid Authorization header")
+
+    token = authorization[len("Bearer ") :].strip()
+    try:
+        payload = decode_access_token(token)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or expired token")
+
+    return payload
