@@ -14,7 +14,7 @@
 - 业务上按“企业即用户”建模，不区分企业主体与个人用户主体
 - 文件统一使用 `rustfs` 存储
 - 当前阶段不启用图库功能
-- 架构采用模块化单体，不做微服务拆分
+- 架构采用分层单体，不做微服务拆分
 
 ## 2. 技术基线
 
@@ -31,74 +31,73 @@
 
 ```text
 app/
+├── main.py
+├── api/            # 接口层与版本化路由
 ├── core/           # 配置、数据库、日志、安全、中间件
-├── common/         # 枚举、类型、稳定通用工具
-├── user/           # 用户主体
-├── project/        # 投标项目
-├── file/           # 文件与 rustfs 元数据
-├── knowledge/      # 知识库与切片索引
-├── tender/         # 招标解析
-├── generate/       # 方案生成
-├── export/         # 文档导出
-├── ai/             # LangChain chains/prompts/retrievers/parsers
-├── integration/    # LLM/OCR/rustfs/vectorstore 等外部适配
-└── task/           # Celery jobs/workflows
+├── models/         # ORM 模型
+├── schemas/        # Pydantic 模型
+├── repositories/   # 数据访问层
+├── services/       # 业务编排层
+├── tasks/          # Celery 任务
+├── ai/             # LangChain 基架层与统一 AI 能力封装
+├── parsers/        # 文件解析与招标抽取
+├── retrieval/      # 切片、向量化、检索、重排
+├── generation/     # Prompt、目录生成、正文扩写、校验
+├── exporters/      # 文档导出
+├── storage/        # 文件存储抽象，当前默认 rustfs
+├── integrations/   # OCR、LLM、Embedding 等外部适配
+├── domain/         # 枚举、值对象、轻领域规则
+├── utils/          # 稳定通用工具
+└── tests/          # 分层测试目录
 ```
 
-模块内推荐遵循以下分层：
+当前阶段额外约束：
 
-- `api/`: 路由层，只负责请求响应转换
-- `application/`: 应用服务，负责跨模块编排
-- `domain/`: 轻领域模型与业务规则
-- `repository/`: 数据访问
-- `models/`: ORM 模型
-- `schemas/`: Pydantic 模型
+- 先固定目录骨架，目录内具体 `.py` 实现文件按任务逐步补充
+- 未经明确要求，不要为了“补完整”预创建一批占位实现文件
 
 ## 4. 架构规则
 
-### 4.1 模块化单体
+### 4.1 分层单体
 
 - 所有能力运行在一个主应用内
-- 严禁以“方便”为由把不同业务域重新揉进一个公共 service 文件
-- 跨模块协作优先走应用服务，不要在路由层直接拼装长流程
+- 路由层保持薄，复杂流程统一收口到 `services/`
+- `repositories/` 只做数据访问，`services/` 负责业务编排
+- `integrations/` 只负责第三方 SDK/Client 接入
+- `ai/` 负责 LangChain、Prompt、Retriever、Chain、Guardrail 等 AI 基架能力
+- `parsers/`、`retrieval/`、`generation/`、`exporters/`、`storage/` 提供可复用能力，但不要直接承担接口层职责
 
-### 4.2 轻领域模型
+### 4.2 AI 能力边界
 
-- 领域层承载业务规则，不只是数据库字段映射
-- 不要上来引入过重的 DDD 套件
-- 项目状态流转、解析结果完整性、生成前置条件这类规则应放在领域层或领域服务
+`ai/` 负责承接统一 AI 基架能力：
 
-### 4.3 AI 边界
-
-`ai/` 模块负责：
-
-- Prompt 模板
-- Retriever
+- Prompt 模板管理
+- LangChain chain 封装
+- Retriever 与 RAG pipeline 组装
 - 结构化输出 parser
-- 目录生成链
-- 正文扩写链
-- 招标抽取链
+- 输出校验、修复与兜底
+- callback、trace、token usage 观测
+- 对业务层暴露统一 AI gateway
 
-`ai/` 模块不负责：
+AI 能力层不负责：
 
 - 用户/项目/任务状态管理
 - 权限控制
 - ORM 模型定义
 - 导出记录管理
 
-业务模块不要直接散落调用 `LangChain` 组件，统一通过 `app/ai` 收口。
+`generation/`、`retrieval/`、`parsers/` 可以调用 `ai/`，但不要直接拼装供应商 SDK；业务流程不要在路由层散落调用 `LangChain` 组件，应通过 `services/` 统一编排。
 
-### 4.4 外部适配
+### 4.3 外部适配
 
-以下依赖统一放入 `integration/`：
+以下依赖统一放入 `integrations/`：
 
 - `rustfs`
 - OCR 服务
 - LLM 服务
 - embedding 服务
 - vector store
-
-不要在业务模块中直接实例化第三方 SDK Client。
+- 通知服务
 
 ## 5. 编码规范
 
@@ -111,7 +110,7 @@ app/
 - 公共函数、类、模块应有简洁 docstring
 - 单个函数保持单一职责，避免超长函数
 - 单个模块不应无限膨胀，超过合理复杂度时应主动拆分
-- 避免把“工具函数”滥放到 `common/`
+- 避免把“工具函数”滥放到 `utils/`
 - 不要创建含糊命名，如 `utils.py`、`helpers.py`、`service.py`、`manager.py`，除非作用域非常明确
 
 ### 5.2 命名规范
@@ -136,7 +135,7 @@ app/
 
 ### 5.4 类型与数据建模规范
 
-- 跨模块输入输出优先使用 `schemas`
+- 跨层输入输出优先使用 `schemas`
 - ORM 模型只表达持久化结构，不承担复杂业务逻辑
 - 领域对象表达业务语义，不直接暴露底层存储细节
 - 对可空值、集合、映射等类型应明确标注
@@ -152,8 +151,8 @@ app/
 
 ### 5.6 SQLAlchemy 与 Repository 规范
 
-- 数据访问统一通过 `repository/`
-- 不要在 `application/` 和 `api/` 中直接拼大量 SQL
+- 数据访问统一通过 `repositories/`
+- 不要在 `services/` 和 `api/` 中直接拼大量 SQL
 - Repository 方法命名应体现查询意图，而不是暴露底层实现细节
 - 一次改动尽量只影响必要的数据访问逻辑
 
@@ -168,18 +167,28 @@ app/
 ### 5.8 注释规范
 
 - 代码应优先自解释
-- 只在复杂规则、边界条件或不直观设计意图处添加注释
+- 关键代码块、核心业务流程、复杂规则、边界条件处应添加中文注释
+- 每个函数、方法在定义上方应有中文注释，简要说明其功能、输入输出或调用场景
+- 只在复杂规则、边界条件或不直观设计意图处添加说明性注释
 - 注释应解释“为什么”，不要机械解释“做了什么”
+- 注释应简洁准确，优先说明设计意图、业务含义和约束条件
 - 不要保留过期注释和被注释掉的大段旧代码
 
 ## 6. 文件与目录约束
 
-- `common/` 只允许放真正跨领域复用的稳定能力
 - `core/` 只放基础设施与框架初始化
 - `schemas/` 不承载业务逻辑
 - `models/` 不直接承担复杂业务编排
-- `repository/` 只做数据访问，不写业务决策
-- `application/` 可以调用多个模块，但不要直接耦合底层第三方 SDK
+- `repositories/` 只做数据访问，不写业务决策
+- `services/` 负责业务编排，但不要直接耦合第三方 SDK
+- `ai/` 负责统一 AI 基架能力，不承载业务状态流转
+- `parsers/` 只放解析能力，不承担项目状态管理
+- `retrieval/` 只放切片、向量化、召回与重排能力
+- `generation/` 只放生成相关能力，不直接承担鉴权或持久化
+- `exporters/` 只放导出能力
+- `storage/` 默认按 `rustfs` 方案组织，不要扩展出与当前方向无关的多套存储实现
+- `integrations/` 统一收口外部系统适配
+- `utils/` 只允许放真正跨层稳定的通用工具
 
 ## 7. 最小改动原则
 
@@ -195,23 +204,27 @@ app/
 ## 8. 任务与异步规范
 
 - 长耗时流程必须优先考虑异步化
-- 解析、知识库入库、生成、导出应通过 `task/` 编排
-- Celery job 应尽量薄，复杂业务编排放到 workflow 或 application service
+- 解析、知识库入库、生成、导出应通过 `tasks/` 编排
+- Celery task 应尽量薄，复杂业务编排放到 `services/`
 - 所有任务要具备可重试、可追踪、可记录失败原因的能力
 
 ## 9. 测试规范
 
-测试目录：
+当前测试目录：
 
-- `tests/unit/`
-- `tests/integration/`
-- `tests/e2e/`
+- `app/tests/ai/`
+- `app/tests/api/`
+- `app/tests/services/`
+- `app/tests/parsers/`
+- `app/tests/retrieval/`
+- `app/tests/generation/`
+- `app/tests/tasks/`
 
 建议原则：
 
-- 领域规则优先写单元测试
-- 应用服务写集成测试
-- 关键主链路至少保留端到端测试入口
+- 业务编排优先覆盖 `services/`
+- 解析、检索、生成等能力目录分别补对应测试
+- 关键主链路至少保留可串联的端到端验证入口
 
 ## 10. 分支协作规范
 
@@ -271,7 +284,7 @@ app/
 - 先理解所在模块边界，再修改代码
 - 不要把业务逻辑塞回路由层
 - 不要把第三方调用散落到业务代码
-- 不要随意扩大 `common/` 目录职责
+- 不要随意扩大 `utils/` 目录职责
 - 不要在未经确认的情况下引入图库相关设计
 - 不要把“企业”和“用户”重新拆成两套主体
 - 文件存储默认按 `rustfs` 方案处理
@@ -283,14 +296,17 @@ app/
 
 建议后续开发顺序：
 
-1. `core` 与应用初始化
-2. `project` + `file`
-3. `knowledge`
-4. `tender`
-5. `ai`
-6. `generate`
-7. `export`
-8. `task`
+1. `core` + `api` + `main.py`
+2. `models` + `schemas` + `repositories`
+3. `integrations` + `ai`
+4. `services`
+5. `storage`
+6. `parsers`
+7. `retrieval`
+8. `generation`
+9. `exporters`
+10. `tasks`
+11. `tests`
 
 ## 15. 成功标准
 
