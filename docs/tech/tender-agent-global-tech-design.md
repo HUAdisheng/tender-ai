@@ -135,10 +135,10 @@ flowchart LR
     APP --> MOD3[Repository 层]
     APP --> MOD4[Model 与 Schema 层]
     APP --> MOD5[AI 基架层]
-    APP --> MOD6[Parser 与 Retrieval 层]
-    APP --> MOD7[Generation 层]
-    APP --> MOD8[Exporter 与 Storage 层]
-    APP --> MOD9[Task 与 Integration 层]
+    APP --> MOD6[Service 业务编排层]
+    APP --> MOD7[Exporter 与 Storage 层]
+    APP --> MOD8[Task 层]
+    APP --> MOD9[Integration 层]
 ```
 
 关键原则：
@@ -165,22 +165,17 @@ app/
 ├── services/
 ├── tasks/
 ├── ai/
-├── parsers/
-├── retrieval/
-├── generation/
 ├── exporters/
 ├── storage/
 ├── integrations/
 ├── domain/
-├── utils/
-└── tests/
-    ├── ai/
-    ├── api/
-    ├── services/
-    ├── parsers/
-    ├── retrieval/
-    ├── generation/
-    └── tasks/
+└── utils/
+
+tests/
+├── ai/
+├── unit/
+├── integration/
+└── e2e/
 ```
 
 目录职责说明：
@@ -232,7 +227,7 @@ app/
 负责：
 
 - 业务流程编排
-- 组合仓储、解析、检索、生成、导出等能力
+- 组合仓储、AI 基架、导出、存储等能力
 - 为接口层和任务层提供统一业务入口
 
 ### 6.7 tasks
@@ -254,49 +249,14 @@ app/
 - 结构化输出解析
 - callback、trace、token usage
 - 输出校验、修复与 guardrail
-- 对 `services/`、`parsers/`、`retrieval/`、`generation/` 暴露统一 AI gateway
+- 对 `services/` 暴露统一 AI gateway
 
 说明：
 
 - `ai/` 是 AI 基架层，不承担业务状态管理。
 - `integrations/` 只负责第三方 client，LangChain 相关抽象统一留在 `ai/`。
 
-### 6.9 parsers
-
-负责：
-
-- 文件加载与文本抽取
-- `PDF`、`Word`、图片、扫描件解析
-- `OCR` 适配与结构抽取
-- 招标信息与评分标准提取
-
-### 6.10 retrieval
-
-负责：
-
-- 文本切片
-- 向量化
-- 向量存储访问
-- 召回、重排与知识检索流程
-
-说明：
-
-- 业务侧检索流程应复用 `ai/` 提供的 retriever 与 RAG 组装能力。
-
-### 6.11 generation
-
-负责：
-
-- 目录生成
-- 正文扩写
-- 引用映射与结果校验
-
-说明：
-
-- 生成层负责投标场景下的生成流程编排。
-- 模型创建、Prompt 注册、Chain 封装等基础能力统一由 `ai/` 提供。
-
-### 6.12 exporters
+### 6.9 exporters
 
 负责：
 
@@ -304,7 +264,7 @@ app/
 - `docx` 导出
 - 结果打包与交付物组装
 
-### 6.13 storage
+### 6.10 storage
 
 负责：
 
@@ -316,7 +276,7 @@ app/
 - 当前阶段虽然目录名保留存储抽象层，但默认实现仍以 `rustfs` 为准。
 - 不再引入本地磁盘或 `MinIO` 作为当前主方案。
 
-### 6.14 integrations
+### 6.11 integrations
 
 负责：
 
@@ -328,7 +288,7 @@ app/
 - `integrations/` 只解决“如何连接外部系统”。
 - 不在该层直接组织 LangChain chain、Prompt、Retriever 或业务生成流程。
 
-### 6.15 domain
+### 6.12 domain
 
 负责：
 
@@ -336,7 +296,7 @@ app/
 - 值对象
 - 轻量领域规则表达
 
-### 6.16 utils
+### 6.13 utils
 
 负责：
 
@@ -346,11 +306,11 @@ app/
 
 - 仅保留真正通用且稳定的工具，避免演变为杂项收纳目录。
 
-### 6.17 tests
+### 6.14 tests
 
 负责：
 
-- 按接口、AI 基架、服务、解析、检索、生成、任务等维度组织测试
+- 按 AI 基架、单元、集成、端到端等维度组织测试
 - 为后续分层实现补齐单元与集成验证入口
 
 ## 7. 核心数据与存储设计

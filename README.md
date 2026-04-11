@@ -40,28 +40,23 @@ app/
 ├── services/
 ├── tasks/
 ├── ai/
-├── parsers/
-├── retrieval/
-├── generation/
 ├── exporters/
 ├── storage/
 ├── integrations/
 ├── domain/
-├── utils/
-└── tests/
-    ├── ai/
-    ├── api/
-    ├── services/
-    ├── parsers/
-    ├── retrieval/
-    ├── generation/
-    └── tasks/
+└── utils/
+
+tests/
+├── ai/
+├── unit/
+├── integration/
+└── e2e/
 ```
 
 ## 架构原则
 
 - 先采用单体应用，避免过早微服务化
-- 顶层按接口、配置、数据模型、仓储、服务、任务、AI 基架与业务能力分层组织
+- 顶层按接口、配置、数据模型、仓储、服务、任务、AI 基架与基础能力分层组织
 - `integrations/` 负责第三方 client，`ai/` 负责 LangChain 基架与统一 AI 能力封装
 - 长耗时链路统一任务化，避免把解析与生成逻辑杂糅在接口层
 - 当前仓库先固定目录骨架，再逐步补充每层实现文件

@@ -40,15 +40,16 @@ app/
 ├── services/       # 业务编排层
 ├── tasks/          # Celery 任务
 ├── ai/             # LangChain 基架层与统一 AI 能力封装
-├── parsers/        # 文件解析与招标抽取
-├── retrieval/      # 切片、向量化、检索、重排
-├── generation/     # Prompt、目录生成、正文扩写、校验
 ├── exporters/      # 文档导出
 ├── storage/        # 文件存储抽象，当前默认 rustfs
 ├── integrations/   # OCR、LLM、Embedding 等外部适配
 ├── domain/         # 枚举、值对象、轻领域规则
-├── utils/          # 稳定通用工具
-└── tests/          # 分层测试目录
+└── utils/          # 稳定通用工具
+tests/
+├── ai/
+├── unit/
+├── integration/
+└── e2e/
 ```
 
 当前阶段额外约束：
@@ -65,7 +66,7 @@ app/
 - `repositories/` 只做数据访问，`services/` 负责业务编排
 - `integrations/` 只负责第三方 SDK/Client 接入
 - `ai/` 负责 LangChain、Prompt、Retriever、Chain、Guardrail 等 AI 基架能力
-- `parsers/`、`retrieval/`、`generation/`、`exporters/`、`storage/` 提供可复用能力，但不要直接承担接口层职责
+- `exporters/`、`storage/` 提供基础能力，但不要直接承担接口层职责
 
 ### 4.2 AI 能力边界
 
@@ -86,7 +87,7 @@ AI 能力层不负责：
 - ORM 模型定义
 - 导出记录管理
 
-`generation/`、`retrieval/`、`parsers/` 可以调用 `ai/`，但不要直接拼装供应商 SDK；业务流程不要在路由层散落调用 `LangChain` 组件，应通过 `services/` 统一编排。
+业务流程不要在路由层散落调用 `LangChain` 组件，应通过 `services/` 统一编排；`services/` 可以调用 `ai/`，但不要直接拼装供应商 SDK。
 
 ### 4.3 外部适配
 
@@ -182,9 +183,6 @@ AI 能力层不负责：
 - `repositories/` 只做数据访问，不写业务决策
 - `services/` 负责业务编排，但不要直接耦合第三方 SDK
 - `ai/` 负责统一 AI 基架能力，不承载业务状态流转
-- `parsers/` 只放解析能力，不承担项目状态管理
-- `retrieval/` 只放切片、向量化、召回与重排能力
-- `generation/` 只放生成相关能力，不直接承担鉴权或持久化
 - `exporters/` 只放导出能力
 - `storage/` 默认按 `rustfs` 方案组织，不要扩展出与当前方向无关的多套存储实现
 - `integrations/` 统一收口外部系统适配
@@ -212,18 +210,16 @@ AI 能力层不负责：
 
 当前测试目录：
 
-- `app/tests/ai/`
-- `app/tests/api/`
-- `app/tests/services/`
-- `app/tests/parsers/`
-- `app/tests/retrieval/`
-- `app/tests/generation/`
-- `app/tests/tasks/`
+- `tests/ai/`
+- `tests/unit/`
+- `tests/integration/`
+- `tests/e2e/`
 
 建议原则：
 
 - 业务编排优先覆盖 `services/`
-- 解析、检索、生成等能力目录分别补对应测试
+- AI 基架能力优先补 `tests/ai/`
+- 解析、检索、生成等能力按需要继续细分到对应测试目录
 - 关键主链路至少保留可串联的端到端验证入口
 
 ## 10. 分支协作规范
