@@ -1,1 +1,0 @@
-"""Tender analysis module."""

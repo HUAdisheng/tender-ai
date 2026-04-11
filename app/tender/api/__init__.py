@@ -1,1 +1,0 @@
-"""Tender API layer."""
