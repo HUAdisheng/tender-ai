@@ -53,6 +53,11 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      # Ensure rustfs adapter uses the mounted directory inside container
+      RUSTFS_BUCKET: /data/rustfs_bucket
+    volumes:
+      - ../data/rustfs_bucket:/data/rustfs_bucket
 
 volumes:
   postgres_data:
