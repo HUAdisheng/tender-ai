@@ -1,0 +1,11 @@
+### 上传文件
+POST {{host}}/api/v1/api/files/upload
+Authorization: Bearer {{access_token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="sample-tender.pdf"
+Content-Type: application/pdf
+
+< ./fixtures/sample-tender.pdf
+--WebAppBoundary--

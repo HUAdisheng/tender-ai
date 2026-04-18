@@ -13,6 +13,7 @@
 
 - 产品需求文档：[docs/prd/tender-agent-prd.md](/home/resonxu/workspace/java_workspace/tender-ai/docs/prd/tender-agent-prd.md)
 - 全局技术设计：[docs/tech/tender-agent-global-tech-design.md](/home/resonxu/workspace/java_workspace/tender-ai/docs/tech/tender-agent-global-tech-design.md)
+- 文件能力说明：[docs/tech/file/file-storage-tech-design.md](/home/resonxu/workspace/java_workspace/tender-ai/docs/tech/file/file-storage-tech-design.md)
 
 ## 推荐技术方向
 
@@ -58,6 +59,8 @@ tests/
 
 当前项目已经具备最小可运行后端骨架，可以按下面步骤启动。
 
+当前仓库统一使用 `uv` 管理 Python 版本、虚拟环境、依赖同步和命令执行，不再使用 `pip install -e .` 作为项目标准启动方式。
+
 推荐直接使用启动脚本：
 
 ```bash
@@ -72,6 +75,8 @@ bash scripts/dev.sh
 - 生成 `.env`
 - 启动 `uvicorn`
 
+如果当前环境对 `~/.cache/uv` 不可写，脚本会自动改用 `/tmp/tender-ai-uv-cache` 作为 `uv` 缓存目录。
+
 如果你希望手动执行，也可以按下面步骤启动。
 
 1. 安装 `uv`
@@ -79,23 +84,28 @@ bash scripts/dev.sh
 如果本机还没有 `uv`，可以先执行：
 
 ```bash
-pip install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-2. 创建并激活虚拟环境
+安装完成后，重新打开终端，确认命令可用：
 
 ```bash
-uv venv
-source .venv/bin/activate
+uv --version
 ```
 
-3. 安装依赖
+2. 同步依赖
 
 ```bash
-uv pip install -e . --no-build-isolation
+UV_CACHE_DIR=/tmp/tender-ai-uv-cache uv sync
 ```
 
-4. 准备环境变量
+说明：
+
+- 首次执行会自动创建 `.venv`
+- 后续协作者统一执行 `uv sync`
+- 当前仓库已提交 `uv.lock`，依赖版本应以锁文件为准
+
+3. 准备环境变量
 
 ```bash
 cp .env.example .env
@@ -103,17 +113,17 @@ cp .env.example .env
 
 当前基础框架启动时不强依赖数据库、Redis 或其他外部服务；如果暂时不配置这些变量，也可以先启动服务。
 
-5. 启动 FastAPI
+4. 启动 FastAPI
 
 ```bash
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
 ```
 
 默认启动地址：
 
 - `http://127.0.0.1:8000`
 
-6. 验证服务是否正常
+5. 验证服务是否正常
 
 打开：
 
@@ -129,10 +139,11 @@ uvicorn app.main:app --reload
 }
 ```
 
-如果后续补了锁文件，也可以直接使用：
+日常开发推荐工作流：
 
 ```bash
 uv sync
+uv run uvicorn app.main:app --reload
 ```
 
 ## 架构原则
