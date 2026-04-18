@@ -1,5 +1,4 @@
-```python
-"""文件存储业务封装。
+﻿"""文件存储业务封装。
 
 将上层调用与底层 storage 实现解耦。当前实现使用本地 rustfs 适配器（app.storage.rustfs）。
 """
@@ -29,5 +28,3 @@ class FileService:
 
 
 file_service = FileService()
-
-```

@@ -1,5 +1,4 @@
-```python
-"""文件上传接口（最小实现）。
+﻿"""文件上传接口（最小实现）。
 
 说明与假设：
 - 为保证企业之间文件不混淆，上传请求必须包含 `X-Company-Id` HTTP 头（字符串）。
@@ -49,5 +48,3 @@ async def upload_file(
     body = await file.read()
     saved = file_service.save_company_file(company_id=company_id, filename=filename, body=body)
     return success_result(saved)
-
-```
